@@ -2,6 +2,7 @@
 using Entidad;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,22 +12,33 @@ namespace Logica
     public class ServicioClientes
     {
         RepositorioClientes Repositorio = new RepositorioClientes();
-        public void Nuevo(Cliente cliente)
+        public string Registrar(Cliente cliente)
         {
-            Repositorio.NuevoCliente(cliente);
+            return Repositorio.Registrar(cliente);
         }
-        public void Actualizar(Cliente cliente)
+        public string Actualizar(Cliente cliente)
         {
-            Repositorio.RegistrarOActualizarCliente(cliente);
+            return Repositorio.Actualizar(cliente);
+        }        
+
+        public List<Cliente> VerClientes()
+        {
+            return Repositorio.ConsultarClientes();
         }
 
-        public void Inactivar(int id)
+        public Cliente BuscarPorIdentificacion(string identificacion)
         {
-            Repositorio.Inactivar();
+            return Repositorio.BuscarPorIdentificacion(identificacion);
         }
-        public void Activar(int id)
+
+        public List<Cliente> ConsultarClientes()
         {
-            Repositorio.Activar();
+            return Repositorio.ConsultarClientes();
+        }
+
+        public string CambiarEstado(int id, EstadoGeneral estado)
+        {
+             return Repositorio.CambiarEstado(id,estado);
         }
     }
 }

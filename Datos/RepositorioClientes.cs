@@ -11,17 +11,12 @@ namespace Datos
 {
     public class RepositorioClientes : Conexion
     {
-        List<Cliente> lista = new List<Cliente>();
+        List<Cliente> Clientes = new List<Cliente>();
         private DataTable dataTable = new DataTable();
 
-        public new MySqlCommand Cmd { get; set; }
+        public new MySqlCommand Cmd { get; set; }       
 
-        public void NuevoCliente(Cliente cliente)
-        {
-            RegistrarOActualizarCliente(cliente);
-        }
-
-        public String RegistrarOActualizarCliente(Cliente cliente)
+        public string Registrar(Cliente cliente)
         {
             try
             {
@@ -29,17 +24,18 @@ namespace Datos
                 {
                     MySqlTransaction transaction = Connection.BeginTransaction();
 
-                    Cmd = new MySqlCommand("RegistrarOActualizarCliente", Connection, transaction)
+                    Cmd = new MySqlCommand("RegistrarCliente", Connection, transaction)
                     {
                         CommandType = CommandType.StoredProcedure
                     };
-                    Cmd.Parameters.Add(new MySqlParameter("identificacion", cliente.Identificacion));
-                    Cmd.Parameters.Add(new MySqlParameter("nombre", cliente.Nombre));
-                    Cmd.Parameters.Add(new MySqlParameter("direccion", cliente.Direccion));
-                    Cmd.Parameters.Add(new MySqlParameter("telefono", cliente.Telefono));
-                    Cmd.Parameters.Add(new MySqlParameter("edad", cliente.Telefono));
-                    Cmd.Parameters.Add(new MySqlParameter("salario", cliente.Telefono));
-                    Cmd.Parameters.Add(new MySqlParameter("estado", cliente.Estado));
+                    Cmd.Parameters.Add(new MySqlParameter("_fechaCreacion", cliente.FechaCreacion));
+                    Cmd.Parameters.Add(new MySqlParameter("_identificacion", cliente.Identificacion));
+                    Cmd.Parameters.Add(new MySqlParameter("_nombres", cliente.Nombres));
+                    Cmd.Parameters.Add(new MySqlParameter("_direccion", cliente.Direccion));
+                    Cmd.Parameters.Add(new MySqlParameter("_telefono", cliente.Telefono));
+                    Cmd.Parameters.Add(new MySqlParameter("_apellidos", cliente.Telefono));
+                    Cmd.Parameters.Add(new MySqlParameter("_salario", cliente.Telefono));
+                    Cmd.Parameters.Add(new MySqlParameter("_estado", cliente.Estado));
 
                     if (Cmd.ExecuteNonQuery() >= 0)
                     {
@@ -66,14 +62,139 @@ namespace Datos
             }
         }
 
-        public void Activar()
+        public string CambiarEstado(int id, EstadoGeneral estado)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (Conectar())
+                {
+                    MySqlTransaction transaction = Connection.BeginTransaction();
+
+                    Cmd = new MySqlCommand("CambiarEstadoCliente", Connection, transaction)
+                    {
+                        CommandType = CommandType.StoredProcedure
+                    };
+                    Cmd.Parameters.Add(new MySqlParameter("_id", id));
+                    Cmd.Parameters.Add(new MySqlParameter("_nuevo_estado", estado));
+
+                    if (Cmd.ExecuteNonQuery() >= 0)
+                    {
+                        transaction.Commit();
+                        return "exito";
+                    }
+                    else
+                    {
+                        return "Error";
+                    }
+                }
+                else
+                {
+                    return "Error Conectar Base Datos";
+                }
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+            finally
+            {
+                DesConectar();
+            }
         }
 
-        public void Inactivar()
+        public string Actualizar(Cliente cliente)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (Conectar())
+                {
+                    MySqlTransaction transaction = Connection.BeginTransaction();
+
+                    Cmd = new MySqlCommand("ActualizarCliente", Connection, transaction)
+                    {
+                        CommandType = CommandType.StoredProcedure
+                    };
+                    Cmd.Parameters.Add(new MySqlParameter("_id", cliente.Id));
+                    Cmd.Parameters.Add(new MySqlParameter("_fechaCreacion", cliente.FechaCreacion));
+                    Cmd.Parameters.Add(new MySqlParameter("_identificacion", cliente.Identificacion));
+                    Cmd.Parameters.Add(new MySqlParameter("_nombres", cliente.Nombres));
+                    Cmd.Parameters.Add(new MySqlParameter("_direccion", cliente.Direccion));
+                    Cmd.Parameters.Add(new MySqlParameter("_telefono", cliente.Telefono));
+                    Cmd.Parameters.Add(new MySqlParameter("_apellidos", cliente.Apellidos));
+                    Cmd.Parameters.Add(new MySqlParameter("_salario", cliente.Telefono));
+                    Cmd.Parameters.Add(new MySqlParameter("_estado", cliente.Estado));
+
+                    if (Cmd.ExecuteNonQuery() >= 0)
+                    {
+                        transaction.Commit();
+                        return "exito";
+                    }
+                    else
+                    {
+                        return "Error";
+                    }
+                }
+                else
+                {
+                    return "Error Conectar Base Datos";
+                }
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+            finally
+            {
+                DesConectar();
+            }
         }
+
+        public List<Cliente> ConsultarClientes()
+        {
+            dataTable = CargarRegistros("ConsultarClientes");
+            if (dataTable == null)
+            {
+                return Clientes = null;
+            }
+            else
+            {
+                Clientes.Clear();
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    Cliente cliente = new Cliente(row["IDENTIFICACION"].ToString(), row["NOMBRE"].ToString(), 
+                                                    row["APELLIDOS"].ToString(),row["TELEFONO"].ToString(),
+                                                    row["DIRECCION"].ToString(),double.Parse(row["SALARIO"].ToString()));
+                    cliente.FechaCreacion = DateTime.Parse(row["FECHACREACION"].ToString());
+                    cliente.Id = int.Parse( row["ID"].ToString());
+                    if (int.Parse(row["ESTADO"].ToString()) == 0)
+                    {
+                        cliente.Estado = EstadoGeneral.Inactivo;
+                    }
+                    else 
+                    {
+                        cliente.Estado = EstadoGeneral.Activo;
+                    }
+
+                   
+                    Clientes.Add(cliente);
+                }
+                return Clientes.FindAll(t=> t.Estado == EstadoGeneral.Activo);
+            }
+        }
+        public Cliente BuscarPorIdentificacion(string identificacion)
+        {
+            Clientes.Clear();
+            Clientes = ConsultarClientes();
+            if (Clientes == null)
+            {
+                return null;
+            }
+            else
+            { 
+                return Clientes.FirstOrDefault(t=> t.Identificacion == identificacion && t.Estado == EstadoGeneral.Activo);
+            }
+        }
+
+        
     }
 }

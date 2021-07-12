@@ -13,8 +13,8 @@ namespace Datos
         private const string servidor = "localhost";
         private const string puerto = "3306";
         private const string usuario = "root";
-        private const string password = "";
-        private const string database = "tienda_dulces";
+        private const string password = "admin";
+        private const string database = "clientes_db";
 
         public MySqlConnection Connection { get; set; }
         public MySqlCommand Cmd { get; set; }
