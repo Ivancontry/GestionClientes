@@ -22,9 +22,9 @@ namespace Presentacion
         {
             return nombres.Length <= 30;
         }
-        public static bool ValidarApellidos(string apellidos)
+        public static bool ValidarApellidos(string nombres)
         {
-            return apellidos.Length <= 30;
+            return nombres.Length <= 30;
         }
         public static bool ValidarTelefono(string telefono)
         {

@@ -40,7 +40,7 @@ namespace Datos
                     if (Cmd.ExecuteNonQuery() >= 0)
                     {
                         transaction.Commit();
-                        return "exito";
+                        return $"Cliente {cliente.Identificacion} {cliente.Nombres.ToUpper()} {cliente.Apellidos.ToUpper()} fue Registrado con Éxito";
                     }
                     else
                     {
@@ -80,7 +80,7 @@ namespace Datos
                     if (Cmd.ExecuteNonQuery() >= 0)
                     {
                         transaction.Commit();
-                        return "exito";
+                        return "¡Cliente Eliminado con Éxito!";
                     }
                     else
                     {
@@ -127,7 +127,7 @@ namespace Datos
                     if (Cmd.ExecuteNonQuery() >= 0)
                     {
                         transaction.Commit();
-                        return "exito";
+                        return $"Cliente {cliente.Identificacion} {cliente.Nombres.ToUpper()} {cliente.Apellidos.ToUpper()} fue actualizado con Éxito";
                     }
                     else
                     {
@@ -183,15 +183,15 @@ namespace Datos
         }
         public Cliente BuscarPorIdentificacion(string identificacion)
         {
-            Clientes.Clear();
+            Clientes?.Clear();
             Clientes = ConsultarClientes();
             if (Clientes == null)
             {
                 return null;
             }
             else
-            { 
-                return Clientes.FirstOrDefault(t=> t.Identificacion == identificacion && t.Estado == EstadoGeneral.Activo);
+            {
+                return Clientes.FirstOrDefault(t => t.Identificacion == identificacion && t.Estado == EstadoGeneral.Activo);
             }
         }
 

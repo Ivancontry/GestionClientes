@@ -33,6 +33,19 @@ namespace Presentacion
             txtSalario.Enabled = false;
             txtTelefono.Enabled = false;
             txtDireccion.Enabled = false;
+            btnGuardar.Enabled = false;
+            btnEliminar.Enabled = false;
+        }
+
+        private void LimpiarInformacionDelCliente() {
+            txtIdentificacion.Text = "";
+            txtNombre.Text = "";
+            txtApellido.Text = "";
+            txtSalario.Text = "";
+            txtTelefono.Text = "";
+            txtDireccion.Text = "";
+            labelEstado.Text = "";
+            labelFechaRegistro.Text = "";
         }
         private void HabilitarCampos()
         {
@@ -43,34 +56,48 @@ namespace Presentacion
             txtDireccion.Enabled = true;
         }
 
+        private void HabilitarBotonGuardar() {
+            btnGuardar.Enabled = true; ;
+        }
+        private void HabilitarBotonEliminar()
+        {
+            btnEliminar.Enabled = true; ;
+        }
+
         private void btnGuardar_Click(object sender, EventArgs e)
         {
             if (Cliente == null)
             {
-                if (ValidarCliente().Count > 0)
+                var errores = ValidarCliente();
+                if (errores.Count > 0)
                 {
-                    MessageBox.Show(MapearErrores(ValidarCliente()));
+                    MessageBox.Show(MapearErrores(errores), "Campos Invalidos", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 else
                 {
                     var cliente = new Cliente(txtIdentificacion.Text, txtNombre.Text, txtApellido.Text,
                                               txtTelefono.Text, txtDireccion.Text, double.Parse(txtSalario.Text));
-                    MessageBox.Show(ServiciosCliente.Registrar(cliente));
+                    MessageBox.Show(ServiciosCliente.Registrar(cliente), "", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    this.LimpiarInformacionDelCliente();
+                    this.InhabilitarCampos();                    
                     Cliente = ServiciosCliente.BuscarPorIdentificacion(cliente.Identificacion);
                     ConsultarClientes();
 
                 }
             }
             else {
-                if (ValidarCliente().Count > 0)
+                var errores = ValidarCliente();
+                if (errores.Count > 0)
                 {
-                    MessageBox.Show(MapearErrores(ValidarCliente()));
+                    MessageBox.Show(MapearErrores(errores), "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 else
                 {
                     Cliente.Editar(txtIdentificacion.Text, txtNombre.Text, txtApellido.Text,
                                               txtTelefono.Text, txtDireccion.Text, double.Parse(txtSalario.Text));
                     MessageBox.Show(ServiciosCliente.Actualizar(Cliente));
+                    this.LimpiarInformacionDelCliente();
+                    this.InhabilitarCampos();
                     ConsultarClientes();
                 }
             }
@@ -79,21 +106,23 @@ namespace Presentacion
         private string MapearErrores(List<string> errores) {
             var mensaje = "";
             errores.ForEach(t=> {
-                mensaje += t + "\n";
+                mensaje += "- " + t + "\n";
             });
             return mensaje;
         }
 
         private void ConsultarClientes()
         {
-           LlenarDataGridView();
+            Clientes = ServiciosCliente.ConsultarClientes();
+            if (Clientes == null) return;
+            LlenarDataGridView(Clientes);
         }
 
-        private void LlenarDataGridView()
+        private void LlenarDataGridView(IEnumerable<Cliente> clientes)
         {
-            Clientes = ServiciosCliente.ConsultarClientes();
+            if (clientes == null) return;
             LimpiarDatagridView(tableClientes);
-            foreach (Cliente cliente in Clientes)
+            foreach (Cliente cliente in clientes)
             {
                 tableClientes.Rows.Add(cliente.FechaCreacion.ToShortDateString(),
                                         cliente.Identificacion,
@@ -117,17 +146,21 @@ namespace Presentacion
 
         private List<string> ValidarCliente() {
             var errores = new List<string>();
-            if (!Validaciones.ValidarIdentificacion(txtIdentificacion.Text) && Validaciones.ValidarTexto(txtIdentificacion.Text)) {
+            if (Validaciones.ValidarIdentificacion(txtIdentificacion.Text) && Validaciones.ValidarTexto(txtIdentificacion.Text)) {
                 errores.Add("Identificación Invalida");
-            };
-            if (!Validaciones.ValidarNombres(txtIdentificacion.Text) && Validaciones.ValidarTexto(txtIdentificacion.Text))
+            }
+            if (Validaciones.ValidarNombres(txtNombre.Text) && Validaciones.ValidarTexto(txtNombre.Text))
             {
                 errores.Add("Nombres Invalidos");
-            };
-            if (!Validaciones.ValidarApellidos(txtIdentificacion.Text) && Validaciones.ValidarTexto(txtIdentificacion.Text))
+            }
+            if (Validaciones.ValidarApellidos(txtApellido.Text) && Validaciones.ValidarTexto(txtApellido.Text))
             {
                 errores.Add("Apellidos Invalidos");
-            };
+            }
+            if (Validaciones.ValidarSoloNumeros(txtSalario.Text))
+            {
+                errores.Add("Salario Invalido");
+            }
             return errores;
         }
 
@@ -140,10 +173,13 @@ namespace Presentacion
                     {
                         MapearClienteEnFormulario();
                         HabilitarCampos();
+                        HabilitarBotonEliminar();
+                        HabilitarBotonGuardar();
                         return "¡Cliente encontrado con Exito!";
                     }
                     else {
                         HabilitarCampos();
+                        HabilitarBotonGuardar();
                         return "¡Cliente no encontrado!";
                     }
 
@@ -172,20 +208,52 @@ namespace Presentacion
 
         private void btnBuscar_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(Buscar(txtIdentificacion.Text));
+            MessageBox.Show(Buscar(txtIdentificacion.Text),"", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnEliminar_Click(object sender, EventArgs e)
         {            
-            MessageBox.Show(CambiarEstadoDeUnCliente(Cliente.Id, EstadoGeneral.Inactivo));
+            MessageBox.Show(CambiarEstadoDeUnCliente(Cliente.Id, EstadoGeneral.Inactivo), "", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private string CambiarEstadoDeUnCliente(int id, EstadoGeneral estado) 
         {
             var mensaje =  ServiciosCliente.CambiarEstado(id,estado);
-            Cliente = ServiciosCliente.BuscarPorIdentificacion(Cliente.Identificacion); 
+            Cliente = ServiciosCliente.BuscarPorIdentificacion(Cliente.Identificacion);
+            LimpiarInformacionDelCliente();
+            InhabilitarCampos();
             ConsultarClientes();
             return mensaje;
+        }
+
+        private void txtIdentificacion_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsNumber(e.KeyChar)) && (e.KeyChar != (char)Keys.Back))
+            {
+                MessageBox.Show("Solo se permiten números", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        private void txtTelefono_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsNumber(e.KeyChar)) && (e.KeyChar != (char)Keys.Back))
+            {
+                MessageBox.Show("Solo se permiten números", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        private void txtSalario_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsNumber(e.KeyChar)) && (e.KeyChar != (char)Keys.Back))
+            {
+                MessageBox.Show("Solo se permiten números", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                e.Handled = true;
+                return;
+            }
         }
     }
 }
